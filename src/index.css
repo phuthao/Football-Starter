@@ -1,0 +1,127 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap');
+
+:root {
+  --diab-green-50:  #e6f5f3;
+  --diab-green-100: #c2e6e1;
+  --diab-green-500: #01645a;
+  --diab-green-600: #015249;
+  --diab-green-700: #014038;
+  --diab-green-800: #002e28;
+  --diab-green-900: #001c18;
+  --diab-lime-400:  #d1e87a;
+  --diab-lime-500:  #c7d36d;
+  --neutral-0:   #ffffff;
+  --neutral-50:  #f2f3f7;
+  --neutral-100: #e6e8ef;
+  --neutral-200: #d0d4df;
+  --neutral-300: #b0b6c9;
+  --neutral-400: #888c9f;
+  --neutral-500: #5e6373;
+  --neutral-600: #474b5a;
+  --neutral-700: #32353f;
+  --neutral-800: #1e2028;
+  --neutral-900: #0e1018;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger:  #ef4444;
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --shadow-sm: 0 1px 4px rgba(0,0,0,.14), 0 0 0 1px rgba(255,255,255,.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,.28);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,.4);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+}
+
+/* Dark theme (default) */
+.dark {
+  --bg-page:    #0e1018;
+  --bg-surface: #181a22;
+  --bg-sunken:  #12141b;
+  --bg-overlay: #1e2028;
+  --fg-1: #f0f1f5;
+  --fg-2: #b0b6c9;
+  --fg-3: #888c9f;
+  --fg-inverse: #0e1018;
+  --fg-brand:   var(--diab-lime-400);
+  --border-subtle:  rgba(255,255,255,.06);
+  --border-default: rgba(255,255,255,.10);
+  --border-strong:  rgba(255,255,255,.18);
+  --border-brand:   var(--diab-green-500);
+}
+
+/* Light theme */
+.light {
+  --bg-page:    #f2f3f7;
+  --bg-surface: #ffffff;
+  --bg-sunken:  #eaecf2;
+  --bg-overlay: #ffffff;
+  --fg-1: #0e1018;
+  --fg-2: #5e6373;
+  --fg-3: #888c9f;
+  --fg-inverse: #ffffff;
+  --fg-brand:   var(--diab-green-500);
+  --border-subtle:  rgba(14,16,24,.06);
+  --border-default: rgba(14,16,24,.10);
+  --border-strong:  rgba(14,16,24,.18);
+  --border-brand:   var(--diab-green-500);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Be Vietnam Pro', Inter, system-ui, sans-serif;
+  background: var(--bg-page);
+  color: var(--fg-1);
+  overflow: hidden;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 99px; }
+
+/* Pitch grass texture */
+.pitch-bg {
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255,255,255,.025) 0px,
+      rgba(255,255,255,.025) 18px,
+      transparent 18px,
+      transparent 36px
+    ),
+    linear-gradient(175deg, #003d2c 0%, #01553e 50%, #003d2c 100%);
+}
+
+/* Bottom sheet animation */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.sheet-enter { animation: slideUp var(--dur-slow) var(--ease-standard) both; }
+.overlay-enter { animation: fadeIn var(--dur-base) ease both; }
+
+/* Formation position bounce */
+@keyframes popIn {
+  0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  70%  { transform: translate(-50%, -50%) scale(1.1); }
+  100% { transform: translate(-50%, -50%) scale(1);   opacity: 1; }
+}
