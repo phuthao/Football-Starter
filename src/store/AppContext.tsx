@@ -1,8 +1,10 @@
-import React, { createContext, useContext, useReducer } from 'react'
-import type { AppState, HistoryEntry, Player, Session, Team } from '../types'
-import { loadPlayers, savePlayers, loadSession, saveSession, loadLastSession, saveLastSession, loadHistory, saveHistory } from '../lib/storage'
+import React, { createContext, useContext, useEffect, useReducer } from 'react'
+import type { AppState, BudgetEntry, HistoryEntry, Player, Session, Team } from '../types'
+import { loadPlayers, savePlayers, loadSession, saveSession, loadLastSession, saveLastSession, loadHistory, saveHistory, loadBudget, saveBudget } from '../lib/storage'
 import { SEED_PLAYERS } from '../lib/seedData'
 import { generateTeams, suggestTeamCount } from '../lib/randomizer'
+import { getSession } from '../lib/supabase'
+import { syncPlayers, syncBudget, syncSessions, pushPlayer, deletePlayer, pushBudgetEntry, deleteBudgetEntry, pushSession, deleteSession } from '../lib/sync'
 import { v4 as uuid } from 'uuid'
 
 type Action =
@@ -24,6 +26,16 @@ type Action =
   | { type: 'SELECT_HISTORY'; id: string | null }
   | { type: 'DELETE_HISTORY'; id: string }
   | { type: 'CLEAR_HISTORY' }
+  | { type: 'ADD_BUDGET'; entry: BudgetEntry }
+  | { type: 'UPDATE_BUDGET'; entry: BudgetEntry }
+  | { type: 'DELETE_BUDGET'; id: string }
+  | { type: 'OPEN_BUDGET_EDITOR'; entry?: BudgetEntry }
+  | { type: 'CLOSE_BUDGET_EDITOR' }
+  | { type: 'OPEN_BUDGET_EXPORT'; entry: BudgetEntry }
+  | { type: 'CLOSE_BUDGET_EXPORT' }
+  | { type: 'SET_LOGGED_IN'; value: boolean }
+  | { type: 'SET_AUTH_LOADING'; value: boolean }
+  | { type: 'SYNC_COMPLETE'; players: Player[]; budget: BudgetEntry[]; history: HistoryEntry[] }
 
 function buildInitialState(): AppState {
   let players = loadPlayers()
@@ -40,6 +52,7 @@ function buildInitialState(): AppState {
     lastTeams: lastSession?.teams ?? null,
     lastTeamsSavedAt: lastSession?.savedAt ?? null,
     history: loadHistory(),
+    budget: loadBudget(),
     selectedHistoryId: null,
     view: 'today',
     resultOpen: false,
@@ -47,6 +60,12 @@ function buildInitialState(): AppState {
     exportOpen: false,
     playerEditorOpen: false,
     editingPlayer: null,
+    budgetEditorOpen: false,
+    editingBudget: null,
+    budgetExportOpen: false,
+    exportingBudget: null,
+    isLoggedIn: false,
+    authLoading: true,
   }
 }
 
@@ -83,14 +102,14 @@ function reducer(state: AppState, action: Action): AppState {
       const teams = generateTeams(present, state.session.teamCount)
       const savedAt = new Date().toISOString()
 
-      // Build player snapshot for this session (names may change later)
       const snapshot: HistoryEntry['playerSnapshot'] = {}
-      present.forEach(p => { snapshot[p.id] = { name: p.name, isGoalkeeper: p.isGoalkeeper, isKey: p.isKey } })
+      present.forEach(p => { snapshot[p.id] = { name: p.name, isGoalkeeper: p.isGoalkeeper, stars: p.stars } })
 
       const entry: HistoryEntry = { id: uuid(), savedAt, teams, playerSnapshot: snapshot }
       const history = [entry, ...state.history]
       saveLastSession(teams)
       saveHistory(history)
+      if (state.isLoggedIn) pushSession(entry).catch(() => {})
       return { ...state, lastTeams: teams, lastTeamsSavedAt: savedAt, history, resultOpen: true }
     }
 
@@ -117,6 +136,7 @@ function reducer(state: AppState, action: Action): AppState {
         : [...state.session.presentIds, action.player.id]
       const session = { ...state.session, presentIds }
       saveSession(session)
+      if (state.isLoggedIn) pushPlayer(action.player).catch(() => {})
       return { ...state, players, session, playerEditorOpen: false, editingPlayer: null }
     }
 
@@ -126,6 +146,7 @@ function reducer(state: AppState, action: Action): AppState {
       const session = { ...state.session, presentIds }
       savePlayers(players)
       saveSession(session)
+      if (state.isLoggedIn) deletePlayer(action.id).catch(() => {})
       return { ...state, players, session }
     }
 
@@ -135,6 +156,7 @@ function reducer(state: AppState, action: Action): AppState {
     case 'DELETE_HISTORY': {
       const history = state.history.filter(e => e.id !== action.id)
       saveHistory(history)
+      if (state.isLoggedIn) deleteSession(action.id).catch(() => {})
       const selectedHistoryId = state.selectedHistoryId === action.id ? null : state.selectedHistoryId
       return { ...state, history, selectedHistoryId }
     }
@@ -142,6 +164,47 @@ function reducer(state: AppState, action: Action): AppState {
     case 'CLEAR_HISTORY': {
       saveHistory([])
       return { ...state, history: [], selectedHistoryId: null }
+    }
+
+    case 'ADD_BUDGET': {
+      const budget = [action.entry, ...state.budget]
+      saveBudget(budget)
+      if (state.isLoggedIn) pushBudgetEntry(action.entry).catch(() => {})
+      return { ...state, budget, budgetEditorOpen: false, editingBudget: null }
+    }
+
+    case 'UPDATE_BUDGET': {
+      const budget = state.budget.map(e => e.id === action.entry.id ? action.entry : e)
+      saveBudget(budget)
+      if (state.isLoggedIn) pushBudgetEntry(action.entry).catch(() => {})
+      return { ...state, budget, budgetEditorOpen: false, editingBudget: null }
+    }
+
+    case 'DELETE_BUDGET': {
+      const budget = state.budget.filter(e => e.id !== action.id)
+      saveBudget(budget)
+      if (state.isLoggedIn) deleteBudgetEntry(action.id).catch(() => {})
+      return { ...state, budget, budgetEditorOpen: false, editingBudget: null }
+    }
+
+    case 'OPEN_BUDGET_EDITOR':
+      return { ...state, budgetEditorOpen: true, editingBudget: action.entry ?? null }
+    case 'CLOSE_BUDGET_EDITOR':
+      return { ...state, budgetEditorOpen: false, editingBudget: null }
+    case 'OPEN_BUDGET_EXPORT':
+      return { ...state, budgetExportOpen: true, exportingBudget: action.entry }
+    case 'CLOSE_BUDGET_EXPORT':
+      return { ...state, budgetExportOpen: false, exportingBudget: null }
+    case 'SET_LOGGED_IN':
+      return { ...state, isLoggedIn: action.value }
+    case 'SET_AUTH_LOADING':
+      return { ...state, authLoading: action.value }
+
+    case 'SYNC_COMPLETE': {
+      savePlayers(action.players)
+      saveBudget(action.budget)
+      saveHistory(action.history)
+      return { ...state, players: action.players, budget: action.budget, history: action.history }
     }
 
     default: return state
@@ -157,6 +220,24 @@ const AppCtx = createContext<Ctx>(null!)
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, buildInitialState)
+
+  useEffect(() => {
+    getSession().then(async session => {
+      if (session) {
+        dispatch({ type: 'SET_LOGGED_IN', value: true })
+        try {
+          const [players, budget, history] = await Promise.all([
+            syncPlayers(state.players),
+            syncBudget(state.budget),
+            syncSessions(state.history),
+          ])
+          dispatch({ type: 'SYNC_COMPLETE', players, budget, history })
+        } catch {}
+      }
+      dispatch({ type: 'SET_AUTH_LOADING', value: false })
+    })
+  }, [])
+
   return <AppCtx.Provider value={{ state, dispatch }}>{children}</AppCtx.Provider>
 }
 

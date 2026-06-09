@@ -1,4 +1,4 @@
-import type { HistoryEntry, Player, Session, Team } from '../types'
+import type { BudgetEntry, HistoryEntry, Player, Session, Team } from '../types'
 
 const K = {
   players:  'ftr.players',
@@ -70,4 +70,12 @@ export function loadHistory(): HistoryEntry[] {
 
 export function saveHistory(history: HistoryEntry[]) {
   set(K.history, history)
+}
+
+export function loadBudget(): BudgetEntry[] {
+  return get<BudgetEntry[]>('ftr.budget') ?? []
+}
+
+export function saveBudget(budget: BudgetEntry[]) {
+  set('ftr.budget', budget)
 }
