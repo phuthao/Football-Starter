@@ -18,18 +18,22 @@ function smallestTeamIdx(teams: string[][]): number {
 }
 
 export function generateTeams(present: Player[], T: 2 | 3): Team[] {
-  const G = shuffle(present.filter(p => p.isGoalkeeper))
-  const K = shuffle(present.filter(p => p.isKey && !p.isGoalkeeper))
-  const O = shuffle(present.filter(p => !p.isGoalkeeper && !p.isKey))
+  const G    = shuffle(present.filter(p => p.isGoalkeeper))
+  const K2   = shuffle(present.filter(p => !p.isGoalkeeper && p.stars === 2))
+  // 1-star and 0-star are pooled together and distributed randomly
+  const rest = shuffle(present.filter(p => !p.isGoalkeeper && p.stars < 2))
 
   const buckets: string[][] = Array.from({ length: T }, () => [])
 
   // Round-robin GKs
   G.forEach((p, i) => buckets[i % T].push(p.id))
-  // Round-robin key players (continuing rotation index)
-  K.forEach((p, i) => buckets[(G.length + i) % T].push(p.id))
-  // Fill onto smallest team
-  for (const p of O) buckets[smallestTeamIdx(buckets)].push(p.id)
+
+  // 2-star: strict 1-per-team round-robin (guaranteed separate teams when K2.length <= T)
+  const offset = G.length
+  K2.forEach((p, i) => buckets[(offset + i) % T].push(p.id))
+
+  // Rest (stars < 2): random fill onto smallest team
+  for (const p of rest) buckets[smallestTeamIdx(buckets)].push(p.id)
 
   const labels = ['A', 'B', 'C'] as const
   return buckets.map((ids, i) => {
@@ -40,7 +44,7 @@ export function generateTeams(present: Player[], T: 2 | 3): Team[] {
       counts: {
         total: ids.length,
         gk: players.filter(p => p?.isGoalkeeper).length,
-        key: players.filter(p => p?.isKey && !p?.isGoalkeeper).length,
+        stars: players.reduce((sum, p) => sum + (p?.isGoalkeeper ? 0 : (p?.stars ?? 0)), 0),
       }
     }
   })
