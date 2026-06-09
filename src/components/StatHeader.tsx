@@ -11,7 +11,7 @@ interface Props {
 export function StatHeader({ players, presentIds, teamCount, onTeamCountChange }: Props) {
   const present = players.filter(p => presentIds.includes(p.id))
   const gk = present.filter(p => p.isGoalkeeper).length
-  const key = present.filter(p => p.isKey && !p.isGoalkeeper).length
+  const key = present.filter(p => !p.isGoalkeeper && p.stars > 0).length
 
   return (
     <div className="bg-brand-500 rounded-xl p-4 flex items-center gap-3">

@@ -3,6 +3,7 @@ import { Sheet } from './ui/Sheet'
 import { Button } from './ui/Button'
 import { SegmentControl } from './ui/SegmentControl'
 import type { Player, Team } from '../types'
+import { TEAM_NAMES } from '../types'
 import { Badge } from './ui/Badge'
 
 const POSITIONS = [
@@ -64,7 +65,7 @@ export function FormationSheet({ open, teams, players, onClose, onExport }: Prop
     setSelected(null)
   }
 
-  const teamOpts = teams.map((t, i) => ({ value: i, label: `Đội ${t.label}` }))
+  const teamOpts = teams.map((t, i) => ({ value: i, label: `Đội ${TEAM_NAMES[t.label] ?? t.label}` }))
 
   return (
     <Sheet open={open} onClose={onClose} title="Sơ đồ sân" fullHeight>

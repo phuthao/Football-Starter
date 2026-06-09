@@ -24,19 +24,19 @@ export function PlayerEditor({ open, player, onSave, onClose, onDelete }: Props)
   const [name, setName] = useState('')
   const [position, setPosition] = useState<Position>('MID')
   const [isGoalkeeper, setIsGoalkeeper] = useState(false)
-  const [isKey, setIsKey] = useState(false)
+  const [stars, setStars] = useState<0 | 1 | 2>(0)
 
   useEffect(() => {
     if (player) {
       setName(player.name)
       setPosition(player.position)
       setIsGoalkeeper(player.isGoalkeeper)
-      setIsKey(player.isKey)
+      setStars(player.stars)
     } else {
       setName('')
       setPosition('MID')
       setIsGoalkeeper(false)
-      setIsKey(false)
+      setStars(0)
     }
   }, [player, open])
 
@@ -53,7 +53,7 @@ export function PlayerEditor({ open, player, onSave, onClose, onDelete }: Props)
       name: name.trim(),
       position,
       isGoalkeeper,
-      isKey,
+      stars,
     })
   }
 
@@ -85,13 +85,33 @@ export function PlayerEditor({ open, player, onSave, onClose, onDelete }: Props)
             checked={isGoalkeeper}
             onChange={v => { setIsGoalkeeper(v); if (v) setPosition('GK') }}
           />
-          <Toggle
-            label="⭐ Chủ lực"
-            sub="Chia đều giữa các đội"
-            checked={isKey}
-            onChange={setIsKey}
-            disabled={isGoalkeeper}
-          />
+          {/* Stars selector */}
+          <div className={`p-3 rounded-lg border transition-all ${
+            isGoalkeeper ? 'opacity-40 pointer-events-none' : ''
+          } ${stars > 0 ? 'bg-brand-500/10 border-brand-500/30' : 'bg-[var(--bg-sunken)] border-[var(--border-subtle)]'}`}>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <div className="text-sm font-semibold text-[var(--fg-1)]">⭐ Chủ lực</div>
+                <div className="text-xs text-[var(--fg-3)]">Chia đều giữa các đội</div>
+              </div>
+              <div className="flex gap-1.5">
+                {([0, 1, 2] as const).map(n => (
+                  <button
+                    key={n}
+                    disabled={isGoalkeeper}
+                    onClick={() => !isGoalkeeper && setStars(n)}
+                    className={`w-9 h-9 rounded-lg text-base font-bold border transition-all active:scale-95 ${
+                      stars === n
+                        ? 'bg-brand-500 border-brand-500 text-white'
+                        : 'bg-[var(--bg-surface)] border-[var(--border-default)] text-[var(--fg-3)]'
+                    }`}
+                  >
+                    {n === 0 ? '–' : '⭐'.repeat(n)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
 
         <Button variant="primary" size="lg" block onClick={handleSave} disabled={!name.trim()}>

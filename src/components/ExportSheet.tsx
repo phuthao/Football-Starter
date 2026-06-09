@@ -2,6 +2,7 @@ import React, { useRef, useEffect } from 'react'
 import { Sheet } from './ui/Sheet'
 import { Button } from './ui/Button'
 import type { Player, Team } from '../types'
+import { TEAM_NAMES } from '../types'
 
 interface Props {
   open: boolean
@@ -38,7 +39,7 @@ function drawExportCanvas(canvas: HTMLCanvasElement, teams: Team[], players: Pla
   // Team columns
   const cols = teams.length
   const colW = SIZE / cols
-  const colors = ['#01645a', '#d97706', '#7c3aed']
+  const colors = ['#ef4444', '#22c55e', '#eab308']
 
   teams.forEach((team, ti) => {
     const x = ti * colW
@@ -50,12 +51,12 @@ function drawExportCanvas(canvas: HTMLCanvasElement, teams: Team[], players: Pla
     ctx.fillStyle = '#ffffff'
     ctx.font = 'bold 42px "Barlow Condensed", sans-serif'
     ctx.textAlign = 'center'
-    ctx.fillText(`ĐỘI ${team.label}`, x + colW / 2, 203)
+    ctx.fillText(`ĐỘI ${(TEAM_NAMES[team.label as 'A'|'B'|'C'] ?? team.label).toUpperCase()}`, x + colW / 2, 203)
 
     // Sub-counts
     ctx.font = '500 22px "Be Vietnam Pro", sans-serif'
     ctx.fillStyle = 'rgba(255,255,255,.75)'
-    ctx.fillText(`${team.counts.total} người · 🧤${team.counts.gk} ⭐${team.counts.key}`, x + colW / 2, 240)
+    ctx.fillText(`${team.counts.total} người · 🧤${team.counts.gk} ⭐${team.counts.stars ?? (team.counts as any).key ?? 0}`, x + colW / 2, 240)
 
     // Players
     teamPlayers.forEach((p, pi) => {
@@ -73,7 +74,7 @@ function drawExportCanvas(canvas: HTMLCanvasElement, teams: Team[], players: Pla
       // Badges
       const badges = []
       if (p.isGoalkeeper) badges.push('🧤')
-      if (p.isKey && !p.isGoalkeeper) badges.push('⭐')
+      if (!p.isGoalkeeper && p.stars > 0) badges.push('⭐'.repeat(p.stars))
       if (badges.length) {
         ctx.font = '22px serif'
         ctx.textAlign = 'right'

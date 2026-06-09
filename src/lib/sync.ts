@@ -3,16 +3,10 @@ import type { BudgetEntry, HistoryEntry, Player } from '../types'
 
 type Table = 'players' | 'budget' | 'sessions'
 
-async function getUserId(): Promise<string> {
-  const { data } = await supabase.auth.getSession()
-  return data.session!.user.id
-}
-
 async function upsertRows(table: Table, rows: { id: string; data: unknown }[]) {
-  const userId = await getUserId()
   if (!rows.length) return
   await supabase.from(table).upsert(
-    rows.map(r => ({ id: r.id, user_id: userId, data: r.data })),
+    rows.map(r => ({ id: r.id, data: r.data })),
     { onConflict: 'id' }
   )
 }
@@ -51,8 +45,7 @@ export async function syncSessions(local: HistoryEntry[]): Promise<HistoryEntry[
 }
 
 export async function pushPlayer(player: Player) {
-  const userId = await getUserId()
-  await supabase.from('players').upsert({ id: player.id, user_id: userId, data: player }, { onConflict: 'id' })
+  await supabase.from('players').upsert({ id: player.id, data: player }, { onConflict: 'id' })
 }
 
 export async function deletePlayer(id: string) {
@@ -60,8 +53,7 @@ export async function deletePlayer(id: string) {
 }
 
 export async function pushBudgetEntry(entry: BudgetEntry) {
-  const userId = await getUserId()
-  await supabase.from('budget').upsert({ id: entry.id, user_id: userId, data: entry }, { onConflict: 'id' })
+  await supabase.from('budget').upsert({ id: entry.id, data: entry }, { onConflict: 'id' })
 }
 
 export async function deleteBudgetEntry(id: string) {
@@ -69,8 +61,7 @@ export async function deleteBudgetEntry(id: string) {
 }
 
 export async function pushSession(entry: HistoryEntry) {
-  const userId = await getUserId()
-  await supabase.from('sessions').upsert({ id: entry.id, user_id: userId, data: entry }, { onConflict: 'id' })
+  await supabase.from('sessions').upsert({ id: entry.id, data: entry }, { onConflict: 'id' })
 }
 
 export async function deleteSession(id: string) {

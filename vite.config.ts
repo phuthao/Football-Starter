@@ -4,7 +4,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   base: '/Football-Starter/',
-plugins: [
+  plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
@@ -21,5 +21,9 @@ plugins: [
         ]
       }
     })
-  ]
+  ],
+  server: {
+    host: true,
+    allowedHosts: true
+  }
 })

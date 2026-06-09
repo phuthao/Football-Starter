@@ -17,7 +17,7 @@ export interface Team {
 export const TEAM_NAMES: Record<'A' | 'B' | 'C', string> = {
   A: 'Đỏ',
   B: 'Xanh',
-  C: 'Tím',
+  C: 'Vàng',
 }
 
 export interface Session {
@@ -74,5 +74,6 @@ export interface AppState {
   budgetExportOpen: boolean
   exportingBudget: BudgetEntry | null
   isLoggedIn: boolean
+  isAdmin: boolean
   authLoading: boolean
 }

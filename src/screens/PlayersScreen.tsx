@@ -54,7 +54,7 @@ export function PlayersScreen() {
               <div className="flex items-center gap-1.5">
                 <span className="text-sm font-semibold text-[var(--fg-1)]">{p.name}</span>
                 {p.isGoalkeeper && <Badge variant="gk" size="xs" />}
-                {p.isKey && !p.isGoalkeeper && <Badge variant="key" size="xs" />}
+                {!p.isGoalkeeper && p.stars > 0 && <span className="text-[10px] leading-none">{('⭐').repeat(p.stars)}</span>}
               </div>
               <div className="text-xs text-[var(--fg-3)]">{posLabel[p.position] ?? p.position}</div>
             </div>

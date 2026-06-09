@@ -33,7 +33,7 @@ type Action =
   | { type: 'CLOSE_BUDGET_EDITOR' }
   | { type: 'OPEN_BUDGET_EXPORT'; entry: BudgetEntry }
   | { type: 'CLOSE_BUDGET_EXPORT' }
-  | { type: 'SET_LOGGED_IN'; value: boolean }
+  | { type: 'SET_LOGGED_IN'; value: boolean; email?: string }
   | { type: 'SET_AUTH_LOADING'; value: boolean }
   | { type: 'SYNC_COMPLETE'; players: Player[]; budget: BudgetEntry[]; history: HistoryEntry[] }
 
@@ -65,6 +65,7 @@ function buildInitialState(): AppState {
     budgetExportOpen: false,
     exportingBudget: null,
     isLoggedIn: false,
+    isAdmin: false,
     authLoading: true,
   }
 }
@@ -195,8 +196,11 @@ function reducer(state: AppState, action: Action): AppState {
       return { ...state, budgetExportOpen: true, exportingBudget: action.entry }
     case 'CLOSE_BUDGET_EXPORT':
       return { ...state, budgetExportOpen: false, exportingBudget: null }
-    case 'SET_LOGGED_IN':
-      return { ...state, isLoggedIn: action.value }
+    case 'SET_LOGGED_IN': {
+      const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS ?? '').split(',').map((e: string) => e.trim().toLowerCase())
+      const isAdmin = action.value && !!action.email && adminEmails.includes(action.email.toLowerCase())
+      return { ...state, isLoggedIn: action.value, isAdmin }
+    }
     case 'SET_AUTH_LOADING':
       return { ...state, authLoading: action.value }
 
@@ -224,7 +228,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     getSession().then(async session => {
       if (session) {
-        dispatch({ type: 'SET_LOGGED_IN', value: true })
+        dispatch({ type: 'SET_LOGGED_IN', value: true, email: session.user.email })
         try {
           const [players, budget, history] = await Promise.all([
             syncPlayers(state.players),

@@ -51,7 +51,7 @@ export function RosterGrid({ players, presentIds, onToggle, onResetAll }: Props)
               </div>
               <div className="flex gap-1">
                 {p.isGoalkeeper && <Badge variant="gk" size="xs" />}
-                {p.isKey && !p.isGoalkeeper && <Badge variant="key" size="xs" />}
+                {!p.isGoalkeeper && p.stars > 0 && <span className="text-[10px] leading-none">{('⭐').repeat(p.stars)}</span>}
               </div>
             </button>
           )

@@ -2,7 +2,9 @@ import React, { useState } from 'react'
 import { useApp } from '../store/AppContext'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
+import { BudgetScreen } from './BudgetScreen'
 import type { HistoryEntry } from '../types'
+import { TEAM_NAMES } from '../types'
 
 function formatDate(iso: string) {
   const d = new Date(iso)
@@ -13,14 +15,14 @@ function formatDate(iso: string) {
 }
 
 const TEAM_COLORS: Record<string, string> = {
-  A: 'text-brand-500 border-brand-500',
-  B: 'text-amber-400 border-amber-500',
-  C: 'text-purple-400 border-purple-500',
+  A: 'text-red-400 border-red-500',
+  B: 'text-brand-500 border-brand-500',
+  C: 'text-yellow-400 border-yellow-500',
 }
 const TEAM_BG: Record<string, string> = {
-  A: 'bg-brand-500/10',
-  B: 'bg-amber-500/10',
-  C: 'bg-purple-500/10',
+  A: 'bg-red-500/10',
+  B: 'bg-brand-500/10',
+  C: 'bg-yellow-500/10',
 }
 
 function HistoryCard({ entry, onDelete }: { entry: HistoryEntry; onDelete: () => void }) {
@@ -31,7 +33,6 @@ function HistoryCard({ entry, onDelete }: { entry: HistoryEntry; onDelete: () =>
 
   return (
     <div className="bg-[var(--bg-overlay)] rounded-xl border border-[var(--border-subtle)] overflow-hidden">
-      {/* Row header */}
       <button
         className="w-full flex items-center gap-3 px-4 py-3 text-left active:bg-[var(--bg-sunken)] transition-colors"
         onClick={() => setOpen(o => !o)}
@@ -44,7 +45,6 @@ function HistoryCard({ entry, onDelete }: { entry: HistoryEntry; onDelete: () =>
         <span className={`text-[var(--fg-3)] text-base transition-transform ${open ? 'rotate-90' : ''}`}>›</span>
       </button>
 
-      {/* Expanded detail */}
       {open && (
         <div className="border-t border-[var(--border-subtle)]">
           {entry.teams.map(team => {
@@ -53,8 +53,8 @@ function HistoryCard({ entry, onDelete }: { entry: HistoryEntry; onDelete: () =>
             return (
               <div key={team.label} className="px-4 py-3 border-b border-[var(--border-subtle)] last:border-0">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className={`font-display text-lg font-bold ${colorCls.split(' ')[0]}`}>Đội {team.label}</span>
-                  <span className="text-xs text-[var(--fg-3)]">{team.counts.total} người · 🧤{team.counts.gk} ⭐{team.counts.key}</span>
+                  <span className={`font-display text-lg font-bold ${colorCls.split(' ')[0]}`}>Đội {TEAM_NAMES[team.label as 'A'|'B'|'C'] ?? team.label}</span>
+                  <span className="text-xs text-[var(--fg-3)]">{team.counts.total} người · 🧤{team.counts.gk} ⭐{team.counts.stars ?? (team.counts as any).key ?? 0}</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {team.playerIds.map(id => {
@@ -67,7 +67,7 @@ function HistoryCard({ entry, onDelete }: { entry: HistoryEntry; onDelete: () =>
                       >
                         {p.name}
                         {p.isGoalkeeper && <Badge variant="gk" size="xs" />}
-                        {p.isKey && !p.isGoalkeeper && <Badge variant="key" size="xs" />}
+                        {!p.isGoalkeeper && (p.stars ?? 0) > 0 && <span className="text-[9px] leading-none">{('⭐').repeat(p.stars ?? 1)}</span>}
                       </span>
                     )
                   })}
@@ -76,7 +76,6 @@ function HistoryCard({ entry, onDelete }: { entry: HistoryEntry; onDelete: () =>
             )
           })}
 
-          {/* Delete row */}
           <div className="px-4 py-3">
             {confirmDel ? (
               <div className="flex items-center gap-2">
@@ -105,7 +104,7 @@ function HistoryCard({ entry, onDelete }: { entry: HistoryEntry; onDelete: () =>
   )
 }
 
-export function HistoryScreen() {
+function TeamsTab() {
   const { state, dispatch } = useApp()
   const { history } = state
   const [confirmClear, setConfirmClear] = useState(false)
@@ -127,34 +126,26 @@ export function HistoryScreen() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-4 pt-4 pb-3 border-b border-[var(--border-subtle)] flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-[var(--fg-1)]">Lịch sử</h1>
-          <p className="text-xs text-[var(--fg-3)]">{history.length} lần chia đội</p>
-        </div>
-        {history.length > 0 && (
-          confirmClear ? (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => { setConfirmClear(false); dispatch({ type: 'CLEAR_HISTORY' }) }}
-                className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
-              >Xoá tất cả</button>
-              <button onClick={() => setConfirmClear(false)} className="text-xs text-[var(--fg-3)] px-2 py-1.5">Huỷ</button>
-            </div>
-          ) : (
+      <div className="px-4 pt-3 pb-2 flex items-center justify-between">
+        <span className="text-xs text-[var(--fg-3)]">{history.length} lần chia đội</span>
+        {confirmClear ? (
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setConfirmClear(true)}
-              className="text-xs text-red-400/60 hover:text-red-400 transition-colors px-2 py-1"
-            >
-              🗑 Xoá tất cả
-            </button>
-          )
+              onClick={() => { setConfirmClear(false); dispatch({ type: 'CLEAR_HISTORY' }) }}
+              className="text-xs font-semibold text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1.5 rounded-lg active:scale-95 transition-all"
+            >Xoá tất cả</button>
+            <button onClick={() => setConfirmClear(false)} className="text-xs text-[var(--fg-3)] px-2 py-1.5">Huỷ</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setConfirmClear(true)}
+            className="text-xs text-red-400/60 hover:text-red-400 transition-colors px-2 py-1"
+          >
+            🗑 Xoá tất cả
+          </button>
         )}
       </div>
-
-      {/* List */}
-      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
+      <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-2">
         {history.map(entry => (
           <HistoryCard
             key={entry.id}
@@ -162,6 +153,41 @@ export function HistoryScreen() {
             onDelete={() => dispatch({ type: 'DELETE_HISTORY', id: entry.id })}
           />
         ))}
+      </div>
+    </div>
+  )
+}
+
+export function HistoryScreen() {
+  const { state } = useApp()
+  const [tab, setTab] = useState<'teams' | 'budget'>('teams')
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="px-4 pt-4 pb-0 border-b border-[var(--border-subtle)]">
+        <h1 className="font-display text-2xl font-bold text-[var(--fg-1)] mb-3">Lịch sử</h1>
+        {/* Segment control — budget tab only for admins */}
+        {state.isAdmin && (
+          <div className="flex gap-0.5 bg-[var(--bg-sunken)] rounded-xl p-1 mb-3">
+            <button
+              onClick={() => setTab('teams')}
+              className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${tab === 'teams' ? 'bg-[var(--bg-overlay)] text-[var(--fg-1)] shadow-sm' : 'text-[var(--fg-3)]'}`}
+            >
+              ⚽ Đội
+            </button>
+            <button
+              onClick={() => setTab('budget')}
+              className={`flex-1 py-1.5 text-sm font-semibold rounded-lg transition-all ${tab === 'budget' ? 'bg-[var(--bg-overlay)] text-[var(--fg-1)] shadow-sm' : 'text-[var(--fg-3)]'}`}
+            >
+              💰 Ngân sách
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex-1 overflow-hidden">
+        {tab === 'teams' || !state.isAdmin ? <TeamsTab /> : <BudgetScreen />}
       </div>
     </div>
   )
