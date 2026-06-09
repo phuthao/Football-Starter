@@ -18,8 +18,10 @@ export function LoginScreen() {
     setLoading(false)
     if (result.ok) {
       dispatch({ type: 'SET_LOGGED_IN', value: true, email: result.email })
-    } else {
+    } else if (result.wrongCredentials) {
       setError('Email hoặc mật khẩu không đúng')
+    } else {
+      setError('Lỗi kết nối, thử lại nhé')
     }
   }
 
@@ -49,7 +51,7 @@ export function LoginScreen() {
         />
         {error && <p className="text-red-400 text-sm text-center">{error}</p>}
         <Button variant="primary" size="lg" block onClick={handleLogin} disabled={loading || !email.trim() || !password.trim()}>
-          {loading ? 'Đang đăng nhập…' : 'Đăng nhập'}
+          {loading ? 'Đang kết nối…' : 'Đăng nhập'}
         </Button>
       </div>
     </div>
