@@ -28,9 +28,10 @@ export function generateTeams(present: Player[], T: 2 | 3): Team[] {
   // Round-robin GKs
   G.forEach((p, i) => buckets[i % T].push(p.id))
 
-  // 2-star: strict 1-per-team round-robin (guaranteed separate teams when K2.length <= T)
-  const offset = G.length
-  K2.forEach((p, i) => buckets[(offset + i) % T].push(p.id))
+  // 2-star: round-robin from a random start so when count is odd,
+  // which team gets the extra player is random (not biased by GK count)
+  const k2Start = Math.floor(Math.random() * T)
+  K2.forEach((p, i) => buckets[(k2Start + i) % T].push(p.id))
 
   // Rest (stars < 2): random fill onto smallest team
   for (const p of rest) buckets[smallestTeamIdx(buckets)].push(p.id)
