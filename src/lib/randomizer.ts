@@ -17,24 +17,51 @@ function smallestTeamIdx(teams: string[][]): number {
   return idx
 }
 
+// Pick team with lowest total stars; break ties by smallest size
+function lowestStarTeamIdx(teams: string[][], starCounts: number[]): number {
+  let idx = 0
+  for (let i = 1; i < teams.length; i++) {
+    if (
+      starCounts[i] < starCounts[idx] ||
+      (starCounts[i] === starCounts[idx] && teams[i].length < teams[idx].length)
+    ) idx = i
+  }
+  return idx
+}
+
 export function generateTeams(present: Player[], T: 2 | 3): Team[] {
-  const G    = shuffle(present.filter(p => p.isGoalkeeper))
-  const K2   = shuffle(present.filter(p => !p.isGoalkeeper && p.stars === 2))
-  // 1-star and 0-star are pooled together and distributed randomly
-  const rest = shuffle(present.filter(p => !p.isGoalkeeper && p.stars < 2))
+  const G  = shuffle(present.filter(p => p.isGoalkeeper))
+  const K2 = shuffle(present.filter(p => !p.isGoalkeeper && p.stars === 2))
+  const K1 = shuffle(present.filter(p => !p.isGoalkeeper && p.stars === 1))
+  const O  = shuffle(present.filter(p => !p.isGoalkeeper && p.stars === 0))
 
   const buckets: string[][] = Array.from({ length: T }, () => [])
 
   // Round-robin GKs
   G.forEach((p, i) => buckets[i % T].push(p.id))
 
-  // 2-star: round-robin from a random start so when count is odd,
-  // which team gets the extra player is random (not biased by GK count)
+  // 2-star: round-robin from a random start — even split when possible,
+  // random assignment of the extra slot when count is odd
   const k2Start = Math.floor(Math.random() * T)
   K2.forEach((p, i) => buckets[(k2Start + i) % T].push(p.id))
 
-  // Rest (stars < 2): random fill onto smallest team
-  for (const p of rest) buckets[smallestTeamIdx(buckets)].push(p.id)
+  // Track star totals per bucket (GKs don't count)
+  const starCounts = buckets.map(ids =>
+    ids.reduce((sum, id) => {
+      const p = present.find(pl => pl.id === id)!
+      return sum + (p?.isGoalkeeper ? 0 : (p?.stars ?? 0))
+    }, 0)
+  )
+
+  // 1-star: assign to team with lowest star total to compensate for any K2 imbalance
+  for (const p of K1) {
+    const idx = lowestStarTeamIdx(buckets, starCounts)
+    buckets[idx].push(p.id)
+    starCounts[idx] += 1
+  }
+
+  // 0-star: just fill smallest team (no star contribution either way)
+  for (const p of O) buckets[smallestTeamIdx(buckets)].push(p.id)
 
   const labels = ['A', 'B', 'C'] as const
   return buckets.map((ids, i) => {
