@@ -7,8 +7,8 @@ export const supabase = createClient(url, key)
 
 export async function signIn(email: string, password: string): Promise<{ ok: boolean; email?: string }> {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error || !data.session) return { ok: false }
-  return { ok: true, email: data.session.user.email }
+  if (error) return { ok: false }
+  return { ok: true, email: data.user?.email }
 }
 
 export async function signOut() {
